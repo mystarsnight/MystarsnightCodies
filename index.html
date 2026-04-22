@@ -1,264 +1,156 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Mystarsnight Pro</title>
+  <meta charset="utf-8">
+  <title>Codies</title>
+  <style>
+    body {
+      font-family: Arial;
+      background: #0f0f0f;
+      color: white;
+      margin: 0;
+    }
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    header {
+      padding: 15px;
+      background: #1a1a1a;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
 
-<style>
-body {
-  margin:0;
-  font-family:Arial;
-  background:#0a0a0a;
-  color:white;
-  overflow:hidden;
-}
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      margin: 5px 0;
+      background: #222;
+      color: white;
+      border: none;
+    }
 
-/* LOGIN */
-#login {
-  position:fixed;
-  inset:0;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
-  background:linear-gradient(135deg,#000,#1a1a1a);
-  z-index:999;
-  animation:fadeIn 1s ease;
-}
+    button {
+      padding: 10px;
+      background: #00ff99;
+      border: none;
+      cursor: pointer;
+    }
 
-@keyframes fadeIn {
-  from{opacity:0}to{opacity:1}
-}
+    .post {
+      background: #1c1c1c;
+      margin: 10px;
+      padding: 10px;
+      border-radius: 10px;
+    }
 
-input,textarea {
-  margin:5px;
-  padding:10px;
-  border-radius:10px;
-  border:none;
-  outline:none;
-}
+    pre {
+      background: #000;
+      padding: 10px;
+      overflow-x: auto;
+    }
 
-button {
-  padding:10px;
-  border:none;
-  border-radius:10px;
-  cursor:pointer;
-  transition:0.3s;
-}
-button:hover{transform:scale(1.05)}
-
-/* APP */
-#app {display:none;animation:slideUp 0.8s ease;}
-
-@keyframes slideUp {
-  from{transform:translateY(30px);opacity:0}
-  to{transform:translateY(0);opacity:1}
-}
-
-.header {
-  text-align:center;
-  padding:15px;
-  background:#111;
-}
-
-.feed {
-  height:60vh;
-  overflow-y:auto;
-  scroll-snap-type:y mandatory;
-}
-
-.card {
-  height:60vh;
-  scroll-snap-align:start;
-  margin:10px;
-  background:#161616;
-  border-radius:20px;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
-  animation:pop 0.4s ease;
-}
-
-@keyframes pop {
-  from{transform:scale(0.95);opacity:0}
-  to{transform:scale(1);opacity:1}
-}
-
-pre {
-  background:black;
-  padding:10px;
-  border-radius:10px;
-  width:90%;
-  overflow:auto;
-}
-
-iframe {
-  width:90%;
-  height:220px;
-  border:none;
-  border-radius:10px;
-  background:white;
-}
-</style>
+    .feed {
+      padding: 10px;
+    }
+  </style>
 </head>
 
 <body>
 
-<!-- LOGIN SCREEN -->
-<div id="login">
-  <h1>🔥 Mystarsnight</h1>
-  <input id="email" placeholder="email">
-  <input id="password" type="password" placeholder="password">
-  <button onclick="signup()">Sign Up</button>
-  <button onclick="login()">Login</button>
+<header>
+  <h2>Codies</h2>
+  <div>
+    <button onclick="login()">Login</button>
+    <button onclick="loadPosts()">Refresh</button>
+  </div>
+</header>
+
+<div style="padding:10px;">
+  <h3>Create Code Post</h3>
+  <input id="title" placeholder="Title">
+  <input id="language" placeholder="Language (JS, Python...)">
+  <textarea id="code" placeholder="Your code..."></textarea>
+  <button onclick="createPost()">Post</button>
 </div>
 
-<!-- APP -->
-<div id="app">
+<div class="feed" id="feed"></div>
 
-  <div class="header">⚡ Mystarsnight Code Hub</div>
-
-  <div style="text-align:center;">
-    <input id="title" placeholder="title">
-    <textarea id="code" placeholder="code"></textarea>
-    <button onclick="postCode()">Post</button>
-  </div>
-
-  <div class="feed" id="feed"></div>
-
-  <div style="text-align:center;">
-    <h3>⚡ Live Preview</h3>
-    <iframe id="preview"></iframe>
-  </div>
-
-</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 
 <script>
-const SUPABASE_URL = "https://heemtxdkjxnlzggtpbsf.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhlZW10eGRranhubHpnZ3RwYnNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4ODUwMTcsImV4cCI6MjA5MjQ2MTAxN30.C-Q1X4XGjz4mZyrkkmW3N4uPFGu1eDe9sb7QWfs9_dU";
+const supabaseUrl = "https://heemtxdkjxnlzggtpbsf.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhlZW10eGRranhubHpnZ3RwYnNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4ODUwMTcsImV4cCI6MjA5MjQ2MTAxN30.C-Q1X4XGjz4mZyrkkmW3N4uPFGu1eDe9sb7QWfs9_dU";
+const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// LOGIN (simple email popup)
+async function login() {
+  const email = prompt("Email:");
+  const password = prompt("Password:");
 
-let user = null;
-let session = null;
-let lastCode = "";
-let allPosts = [];
-
-/* LOGIN */
-async function signup(){
-  const { data } = await supabase.auth.signUp({
-    email:email.value,
-    password:password.value
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password
   });
 
-  user = data.user;
-  enter();
+  if (error) alert(error.message);
+  else alert("Logged in!");
 }
 
-async function login(){
-  const { data } = await supabase.auth.signInWithPassword({
-    email:email.value,
-    password:password.value
+// CREATE POST
+async function createPost() {
+  const title = document.getElementById("title").value;
+  const language = document.getElementById("language").value;
+  const code = document.getElementById("code").value;
+
+  const user = await supabase.auth.getUser();
+
+  const { error } = await supabase.from("posts").insert({
+    title,
+    language,
+    code,
+    author: user.data.user?.email || "anon"
   });
 
-  user = data.user;
-  enter();
+  if (error) alert(error.message);
+  else {
+    alert("Posted!");
+    loadPosts();
+  }
 }
 
-/* ENTER APP */
-function enter(){
-  document.getElementById("login").style.display="none";
-  document.getElementById("app").style.display="block";
-  loadFeed();
-}
-
-/* POST */
-async function postCode(){
-  const room = crypto.randomUUID();
-
-  await supabase.from("codes").insert({
-    user_id:user.id,
-    title:title.value,
-    code:code.value,
-    session_id:room
-  });
-
-  join(room);
-  loadFeed();
-}
-
-/* MULTIPLAYER (POLLING) */
-function join(id){
-  session = id;
-
-  setInterval(async () => {
-    if(!session) return;
-
-    const { data } = await supabase
-      .from("codes")
-      .select("*")
-      .eq("session_id",session)
-      .single();
-
-    if(data && data.code !== lastCode){
-      lastCode = data.code;
-      code.value = data.code;
-      run(data.code);
-    }
-  },1200);
-}
-
-/* LIVE UPDATE */
-code.addEventListener("input", async () => {
-  if(!session) return;
-
-  await supabase
-    .from("codes")
-    .update({code:code.value})
-    .eq("session_id",session);
-});
-
-/* PREVIEW */
-function run(html){
-  const iframe = document.getElementById("preview");
-  iframe.contentWindow.document.open();
-  iframe.contentWindow.document.write(html);
-  iframe.contentWindow.document.close();
-}
-
-/* FEED */
-async function loadFeed(){
+// LOAD FEED
+async function loadPosts() {
   const { data } = await supabase
-    .from("codes")
+    .from("posts")
     .select("*")
-    .order("created_at",{ascending:false});
+    .order("created_at", { ascending: false });
 
-  allPosts = data;
-  render(data);
-}
-
-function render(list){
   const feed = document.getElementById("feed");
-  feed.innerHTML="";
+  feed.innerHTML = "";
 
-  list.forEach(c=>{
-    const div=document.createElement("div");
-    div.className="card";
-
-    div.innerHTML=`
-      <h2>${c.title}</h2>
-      <button onclick="join('${c.session_id}')">👥 Join</button>
-      <button onclick="run(\`${c.code}\`)">▶ Run</button>
-      <pre>${c.code}</pre>
+  data.forEach(post => {
+    feed.innerHTML += `
+      <div class="post">
+        <h3>${post.title}</h3>
+        <small>${post.language} • ${post.author}</small>
+        <pre><code>${post.code}</code></pre>
+        <button onclick="copyCode(\`${escapeCode(post.code)}\`)">Copy</button>
+      </div>
     `;
-
-    feed.appendChild(div);
   });
 }
 
-loadFeed();
+// COPY CODE
+function copyCode(code) {
+  navigator.clipboard.writeText(code);
+  alert("Copied!");
+}
+
+function escapeCode(str) {
+  return str.replace(/`/g, "\\`");
+}
+
+// initial load
+loadPosts();
 </script>
 
 </body>
