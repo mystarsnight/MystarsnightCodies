@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Codies V6</title>
+<title>Codies V7.2</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 
@@ -10,20 +10,22 @@
 body{
   margin:0;
   font-family:system-ui;
-  background:#0b0b0b;
+  background:#0a0a0a;
   color:white;
 }
 
-/* HEADER */
 header{
   display:flex;
   justify-content:space-between;
-  padding:14px;
+  padding:12px;
   background:#111;
+  border-bottom:1px solid #222;
 }
 
-/* LAYOUT */
-.main{display:flex;height:calc(100vh - 55px)}
+.main{
+  display:flex;
+  height:calc(100vh - 55px);
+}
 
 /* SIDEBAR */
 .sidebar{
@@ -41,11 +43,11 @@ header{
 }
 
 /* POST */
-.post{
+.card{
   background:#151515;
-  padding:16px;
-  border-radius:12px;
-  margin-bottom:15px;
+  padding:12px;
+  margin-bottom:12px;
+  border-radius:10px;
   border:1px solid #222;
 }
 
@@ -60,7 +62,7 @@ input,textarea{
   border-radius:8px;
 }
 
-/* BUTTONS */
+/* BUTTON */
 button{
   width:100%;
   padding:10px;
@@ -71,12 +73,12 @@ button{
   cursor:pointer;
 }
 
-/* MODAL SYSTEM */
+/* MODAL */
 .modal{
   display:none;
   position:fixed;
   inset:0;
-  background:rgba(0,0,0,0.7);
+  background:rgba(0,0,0,0.75);
   justify-content:center;
   align-items:center;
 }
@@ -85,34 +87,38 @@ button{
   background:#141414;
   padding:20px;
   width:350px;
-  border-radius:12px;
+  border-radius:10px;
   border:1px solid #333;
 }
 
-/* BADGE */
-.badge{color:#00ff88;font-size:12px}
-
-/* ACTIONS */
-.actions{
-  display:flex;
-  gap:10px;
-  margin-top:10px;
+/* POPUP */
+.popup{
+  position:fixed;
+  bottom:20px;
+  left:50%;
+  transform:translateX(-50%);
+  background:#111;
+  padding:10px 15px;
+  border:1px solid #333;
+  border-radius:10px;
+  display:none;
 }
-.actions button{flex:1}
 </style>
 </head>
 
 <body>
 
 <header>
-  <div>Codies V6 🚀</div>
+  <div>Codies</div>
   <div id="userBox"></div>
 </header>
 
 <div class="main">
 
+<!-- SIDEBAR -->
 <div class="sidebar">
-  <h3>Create</h3>
+
+  <h3>Create Code</h3>
 
   <input id="title" placeholder="Title">
   <input id="lang" placeholder="Language">
@@ -120,12 +126,12 @@ button{
 
   <button onclick="createPost()">Post</button>
 
-  <input id="search" placeholder="Search..." oninput="loadPosts()">
-
   <button onclick="openLogin()">Login</button>
-  <button id="adminBtn" style="display:none" onclick="openAdmin()">Admin</button>
+  <button id="adminBtn" style="display:none" onclick="openAdmin()">Admin Panel</button>
+
 </div>
 
+<!-- FEED -->
 <div class="feed" id="feed"></div>
 
 </div>
@@ -134,11 +140,11 @@ button{
 <div class="modal" id="loginModal">
   <div class="box">
     <h3>Login</h3>
-    <input id="email">
-    <input id="password" type="password">
+    <input id="email" placeholder="Email">
+    <input id="password" type="password" placeholder="Password">
 
     <button onclick="login()">Login</button>
-    <button onclick="signup()">Sign up</button>
+    <button onclick="signup()">Sign Up</button>
     <button onclick="closeLogin()">Close</button>
   </div>
 </div>
@@ -146,93 +152,111 @@ button{
 <!-- ADMIN -->
 <div class="modal" id="adminModal">
   <div class="box">
-    <h3>Admin Panel</h3>
-    <input id="targetUser">
+    <h3>Admin Panel !!!</h3>
+
+    <input id="targetUser" placeholder="User email">
 
     <button onclick="warn()">Warn</button>
-    <button onclick="ban24()">Ban 24h</button>
-    <button onclick="perm()">Perm Ban</button>
+    <button onclick="ban()">Ban</button>
     <button onclick="verify()">Verify</button>
 
     <button onclick="closeAdmin()">Close</button>
   </div>
 </div>
 
+<!-- POPUP -->
+<div class="popup" id="popup"></div>
+
 <script>
 
 /* ================= SUPABASE ================= */
-const supabaseUrl="https://heemtxdkjxnlzggtpbsf.supabase.co"
-const supabaseKey="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhlZW10eGRranhubHpnZ3RwYnNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4ODUwMTcsImV4cCI6MjA5MjQ2MTAxN30.C-Q1X4XGjz4mZyrkkmW3N4uPFGu1eDe9sb7QWfs9_dU"
-const client=supabase.createClient(supabaseUrl,supabaseKey)
+const supabaseUrl = "https://heemtxdkjxnlzggtpbsf.supabase.co"
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhlZW10eGRranhubHpnZ3RwYnNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4ODUwMTcsImV4cCI6MjA5MjQ2MTAxN30.C-Q1X4XGjz4mZyrkkmW3N4uPFGu1eDe9sb7QWfs9_dU"
+
+const client = supabase.createClient(supabaseUrl, supabaseKey)
 
 /* ================= STATE ================= */
-let user=null
-let profile=null
+let user = null
+let profile = null
 
-/* ================= LOAD USER ================= */
+/* ================= POPUP ================= */
+function show(msg){
+  const p = document.getElementById("popup")
+  p.innerText = msg
+  p.style.display = "block"
+  setTimeout(()=>p.style.display="none",2000)
+}
+
+/* ================= USER ================= */
 async function getUser(){
-  const {data}=await client.auth.getUser()
-  user=data.user
-  if(user) await loadProfile()
+  const { data } = await client.auth.getUser()
+  user = data.user
+
+  if(user){
+    await loadProfile()
+  }
+
   updateUI()
 }
 
 /* ================= PROFILE ================= */
 async function loadProfile(){
-  const {data}=await client
+  const { data } = await client
     .from("profiles")
     .select("*")
-    .eq("email",user.email)
+    .eq("email", user.email)
+
+  if(!data || data.length === 0){
+    await client.from("profiles").insert({
+      email:user.email,
+      role:"user",
+      verified:false,
+      banned:false
+    })
+  }
+
+  const { data: p } = await client
+    .from("profiles")
+    .select("*")
+    .eq("email", user.email)
     .single()
 
-  profile=data
-  checkBan()
-}
-
-/* ================= GLOBAL BAN CHECK ================= */
-function checkBan(){
-  if(profile?.banned){
-    client.auth.signOut()
-    showPopup("You are banned 🚫")
-    return true
-  }
-  return false
-}
-
-/* ================= POPUP SYSTEM ================= */
-function showPopup(msg){
-  const m=document.createElement("div")
-  m.style="position:fixed;inset:0;background:rgba(0,0,0,0.8);display:flex;justify-content:center;align-items:center"
-  m.innerHTML=`<div class="box"><h3>${msg}</h3><button onclick="this.parentElement.parentElement.remove()">OK</button></div>`
-  document.body.appendChild(m)
+  profile = p
 }
 
 /* ================= AUTH ================= */
-function openLogin(){loginModal.style.display="flex"}
-function closeLogin(){loginModal.style.display="none"}
+function openLogin(){ loginModal.style.display="flex" }
+function closeLogin(){ loginModal.style.display="none" }
 
 async function login(){
-  const {error}=await client.auth.signInWithPassword({
+  const { error } = await client.auth.signInWithPassword({
     email:email.value,
     password:password.value
   })
-  if(error) return showPopup(error.message)
+
+  if(error) return show(error.message)
+
   closeLogin()
   getUser()
+  loadPosts()
 }
 
 async function signup(){
-  await client.auth.signUp({
+  const { error } = await client.auth.signUp({
     email:email.value,
     password:password.value,
-    options:{emailRedirectTo:"https://mystarsnight.github.io/MystarsnightCode/"}
+    options:{
+      emailRedirectTo:"https://mystarsnight.github.io/MystarsnightCode/"
+    }
   })
-  showPopup("Check email 📩")
+
+  if(error) show(error.message)
+  else show("Check email 📩")
 }
 
 /* ================= POSTS ================= */
 async function createPost(){
-  if(!user||checkBan())return
+  if(!user) return show("Login first")
 
   await client.from("posts").insert({
     title:title.value,
@@ -241,83 +265,93 @@ async function createPost(){
     author:user.email
   })
 
+  show("Posted!")
   loadPosts()
 }
 
 async function loadPosts(){
-  const {data}=await client.from("posts")
-  .select("*")
-  .order("created_at",{ascending:false})
+  const { data, error } = await client.from("posts")
+    .select("*")
+    .order("created_at",{ascending:false})
 
-  feed.innerHTML=""
+  if(error){
+    feed.innerHTML = "<div>DB error: "+error.message+"</div>"
+    return
+  }
+
+  if(!data || data.length === 0){
+    feed.innerHTML = "<div>No posts yet</div>"
+    return
+  }
+
+  feed.innerHTML = ""
 
   data.forEach(p=>{
-    const div=document.createElement("div")
-    div.className="post"
+    const div = document.createElement("div")
+    div.className = "card"
 
-    div.innerHTML=`
-      <h3>${p.title} ${profile?.verified?"✔":""}</h3>
+    div.innerHTML = `
+      <b>${p.title}</b><br>
       <small>${p.language} • ${p.author}</small>
       <pre>${p.code}</pre>
-
-      <div class="actions">
-        <button onclick="likePost('${p.id}')">❤️</button>
-        <button onclick="comment('${p.id}')">💬</button>
-      </div>
     `
+
     feed.appendChild(div)
   })
 }
 
 /* ================= ADMIN ================= */
 function isAdmin(){
-  return profile?.role==="admin"
+  return profile?.role === "admin"
 }
 
 function openAdmin(){
-  if(!isAdmin())return showPopup("Not admin")
+  if(!isAdmin()) return show("Not admin")
   adminModal.style.display="flex"
 }
 
-function closeAdmin(){adminModal.style.display="none"}
+function closeAdmin(){
+  adminModal.style.display="none"
+}
 
 async function warn(){
   await client.from("warnings").insert({
     user_email:targetUser.value,
-    reason:"warn"
+    reason:"warning"
   })
-  showPopup("Warned")
+
+  show("User warned")
 }
 
-async function ban24(){
-  await client.from("profiles").update({
-    banned:true,
-    ban_until:new Date(Date.now()+86400000)
-  }).eq("email",targetUser.value)
-}
+async function ban(){
+  await client.from("profiles")
+    .update({ banned:true })
+    .eq("email", targetUser.value)
 
-async function perm(){
-  await client.from("profiles").update({
-    banned:true
-  }).eq("email",targetUser.value)
+  show("User banned")
 }
 
 async function verify(){
-  await client.from("profiles").update({
-    verified:true
-  }).eq("email",targetUser.value)
+  await client.from("profiles")
+    .update({ verified:true })
+    .eq("email", targetUser.value)
+
+  show("User verified")
 }
 
 /* ================= UI ================= */
 function updateUI(){
-  userBox.innerHTML=user?user.email:`<button onclick="openLogin()">Login</button>`
-  adminBtn.style.display=isAdmin()?"block":"none"
+  userBox.innerHTML = user
+    ? user.email
+    : `<button onclick="openLogin()">Login</button>`
+
+  adminBtn.style.display = isAdmin() ? "block" : "none"
 }
 
 /* ================= INIT ================= */
-client.auth.onAuthStateChange((_,s)=>{
-  if(s){
-    user=s.user
+client.auth.onAuthStateChange((_, session)=>{
+  if(session){
+    user = session.user
     loadProfile()
     updateUI()
   }
