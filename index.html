@@ -14,10 +14,9 @@ body{
   color:white;
 }
 
-#auth, #app{height:100vh;}
-
 #auth{
   display:flex;
+  height:100vh;
   align-items:center;
   justify-content:center;
   flex-direction:column;
@@ -73,26 +72,6 @@ button{
   max-width:420px;
 }
 
-.codiesPost{
-  height:70vh;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
-  background:#111;
-  margin:10px;
-  border-radius:20px;
-}
-
-#postBox{
-  position:fixed;
-  bottom:10px;
-  left:50%;
-  transform:translateX(-50%);
-  display:flex;
-  gap:10px;
-}
-
 #msg{
   position:fixed;
   top:20px;
@@ -102,6 +81,11 @@ button{
   padding:10px;
   border-radius:10px;
   display:none;
+  z-index:999;
+}
+
+.admin{
+  border:2px solid red;
 }
 </style>
 </head>
@@ -133,16 +117,11 @@ button{
   <div class="feed" id="discover"></div>
   <div class="feed" id="codies" style="display:none;"></div>
 
-  <div id="postBox">
-    <input id="postInput" placeholder="Post...">
-    <button onclick="post()">🚀</button>
-  </div>
-
 </div>
 
 <script>
 
-/* ✅ FIXED SUPABASE INIT */
+/* ✅ FIXED SUPABASE INIT (IMPORTANT) */
 const sb = supabase.createClient(
 "https://heemtxdkjxnlzggtpbsf.supabase.co",
 "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhlZW10eGRranhubHpnZ3RwYnNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4ODUwMTcsImV4cCI6MjA5MjQ2MTAxN30.C-Q1X4XGjz4mZyrkkmW3N4uPFGu1eDe9sb7QWfs9_dU"
@@ -154,10 +133,15 @@ let user=null;
 function showMsg(t){
   msg.innerText=t;
   msg.style.display="block";
-  setTimeout(()=>msg.style.display="none",2000);
+  setTimeout(()=>msg.style.display="none",2500);
 }
 
-/* SIGNUP FIXED */
+/* 🔥 ADMIN CHECK */
+function isAdmin(email){
+  return email === "blakestalder123@gmail.com";
+}
+
+/* 🔥 SIGNUP FIXED (REAL WORKING) */
 async function signup(){
 
   const { data, error } = await sb.auth.signUp({
@@ -166,26 +150,32 @@ async function signup(){
   });
 
   if(error){
-    showMsg(error.message);
+    showMsg("Signup error: " + error.message);
     return;
   }
 
   const u = data.user;
 
   if(!u){
-    showMsg("Check email for verification");
+    showMsg("Check email to confirm account");
     return;
   }
 
-  await sb.from("profiles").insert({
+  const { error: profileError } = await sb.from("profiles").insert({
     id: u.id,
-    username: username.value
+    username: username.value,
+    is_admin: isAdmin(email.value)
   });
 
-  showMsg("Signup success!");
+  if(profileError){
+    showMsg("Profile error: " + profileError.message);
+    return;
+  }
+
+  showMsg("Signup successful!");
 }
 
-/* LOGIN FIXED */
+/* 🔥 LOGIN FIXED */
 async function login(){
 
   const { data, error } = await sb.auth.signInWithPassword({
@@ -194,14 +184,14 @@ async function login(){
   });
 
   if(error){
-    showMsg(error.message);
+    showMsg("Login error: " + error.message);
     return;
   }
 
   start(data.user);
 }
 
-/* START */
+/* START APP */
 async function start(u){
 
   const { data } = await sb
@@ -219,7 +209,7 @@ async function start(u){
   loadCodies();
 }
 
-/* SWITCH */
+/* SWITCH TABS */
 function show(tab){
   discover.style.display = tab==="discover"?"block":"none";
   codies.style.display = tab==="codies"?"block":"none";
@@ -227,6 +217,7 @@ function show(tab){
 
 /* DISCOVER */
 async function loadDiscover(){
+
   const { data } = await sb
     .from("posts")
     .select("*, profiles(username)")
@@ -236,7 +227,7 @@ async function loadDiscover(){
 
   data.forEach(p=>{
     discover.innerHTML+=`
-      <div class="post">
+      <div class="post ${p.profiles?.is_admin?'admin':''}">
         <b>${p.profiles?.username||"User"}</b>
         <p>${p.content}</p>
       </div>
@@ -246,6 +237,7 @@ async function loadDiscover(){
 
 /* CODIES */
 async function loadCodies(){
+
   const { data } = await sb
     .from("posts")
     .select("*, profiles(username)")
@@ -255,24 +247,12 @@ async function loadCodies(){
 
   data.forEach(p=>{
     codies.innerHTML+=`
-      <div class="codiesPost">
-        <h2>${p.profiles?.username||"User"}</h2>
+      <div class="post">
+        <b>${p.profiles?.username||"User"}</b>
         <p>${p.content}</p>
       </div>
     `;
   });
-}
-
-/* POST */
-async function post(){
-  await sb.from("posts").insert({
-    user_id:user.id,
-    content:postInput.value
-  });
-
-  postInput.value="";
-  loadDiscover();
-  loadCodies();
 }
 
 </script>
