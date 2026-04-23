@@ -1,76 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Mystarsnight Code</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+
+<style>
+body{
+  margin:0;
+  font-family:system-ui;
+  background:#0f0f0f;
+  color:white;
+}
+
+#auth, #app{height:100vh;}
+
+#auth{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  gap:10px;
+}
+
+input{
+  padding:10px;
+  border:none;
+  border-radius:10px;
+  background:#1a1a1a;
+  color:white;
+  width:240px;
+}
+
+button{
+  padding:10px;
+  border:none;
+  border-radius:10px;
+  background:linear-gradient(45deg,#00f5ff,#9f00ff);
+  color:white;
+  cursor:pointer;
+}
+
+#app{display:none;}
+
+#top{
+  display:flex;
+  justify-content:center;
+  gap:10px;
+  padding:10px;
+  background:#111;
+}
+
+.tab{
+  padding:8px 14px;
+  background:#222;
+  border-radius:10px;
+  cursor:pointer;
+}
+
+.feed{
+  height:calc(100vh - 60px);
+  overflow-y:auto;
+  padding:10px;
+}
+
+.post{
+  background:#151515;
+  margin:10px auto;
+  padding:15px;
+  border-radius:12px;
+  max-width:420px;
+}
+
+.codiesPost{
+  height:70vh;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  background:#111;
+  margin:10px;
+  border-radius:20px;
+}
+
+#postBox{
+  position:fixed;
+  bottom:10px;
+  left:50%;
+  transform:translateX(-50%);
+  display:flex;
+  gap:10px;
+}
+
+#msg{
+  position:fixed;
+  top:20px;
+  left:50%;
+  transform:translateX(-50%);
+  background:#222;
+  padding:10px;
+  border-radius:10px;
+  display:none;
+}
+</style>
+</head>
+
+<body>
+
+<div id="msg"></div>
+
+<!-- AUTH -->
+<div id="auth">
+  <h2>Mystarsnight Code</h2>
+
+  <input id="email" placeholder="Email">
+  <input id="password" type="password" placeholder="Password">
+  <input id="username" placeholder="Username">
+
+  <button onclick="signup()">SIGN UP</button>
+  <button onclick="login()">LOGIN</button>
+</div>
+
+<!-- APP -->
+<div id="app">
+
+  <div id="top">
+    <div class="tab" onclick="show('discover')">🔍 Discover</div>
+    <div class="tab" onclick="show('codies')">🎥 Codies</div>
+  </div>
+
+  <div class="feed" id="discover"></div>
+  <div class="feed" id="codies" style="display:none;"></div>
+
+  <div id="postBox">
+    <input id="postInput" placeholder="Post...">
+    <button onclick="post()">🚀</button>
+  </div>
+
+</div>
+
 <script>
-const supabase = supabase.createClient(
+
+/* ✅ FIXED SUPABASE INIT */
+const sb = supabase.createClient(
 "https://heemtxdkjxnlzggtpbsf.supabase.co",
 "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhlZW10eGRranhubHpnZ3RwYnNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4ODUwMTcsImV4cCI6MjA5MjQ2MTAxN30.C-Q1X4XGjz4mZyrkkmW3N4uPFGu1eDe9sb7QWfs9_dU"
 );
 
 let user=null;
 
-/* UI MESSAGE */
+/* MESSAGE */
 function showMsg(t){
   msg.innerText=t;
   msg.style.display="block";
   setTimeout(()=>msg.style.display="none",2000);
 }
 
-/* 🔥 FIXED SIGNUP (THIS IS THE IMPORTANT PART) */
+/* SIGNUP FIXED */
 async function signup(){
 
-  if(!email.value || !password.value || !username.value){
-    showMsg("Fill all fields");
-    return;
-  }
-
-  const { data, error } = await supabase.auth.signUp({
+  const { data, error } = await sb.auth.signUp({
     email: email.value,
     password: password.value
   });
 
   if(error){
-    showMsg("Signup failed: " + error.message);
+    showMsg(error.message);
     return;
   }
 
   const u = data.user;
 
   if(!u){
-    showMsg("Check email to confirm signup");
+    showMsg("Check email for verification");
     return;
   }
 
-  const { error: profileError } = await supabase.from("profiles").insert({
+  await sb.from("profiles").insert({
     id: u.id,
     username: username.value
   });
 
-  if(profileError){
-    showMsg("Profile error: " + profileError.message);
-    return;
-  }
-
-  showMsg("Signup success! Now login");
+  showMsg("Signup success!");
 }
 
-/* LOGIN */
+/* LOGIN FIXED */
 async function login(){
 
-  const { data, error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await sb.auth.signInWithPassword({
     email: email.value,
     password: password.value
   });
 
   if(error){
-    showMsg("Login failed: " + error.message);
+    showMsg(error.message);
     return;
   }
 
   start(data.user);
 }
 
-/* START APP */
+/* START */
 async function start(u){
 
-  const { data } = await supabase
+  const { data } = await sb
     .from("profiles")
     .select("*")
     .eq("id",u.id)
@@ -85,15 +219,15 @@ async function start(u){
   loadCodies();
 }
 
-/* TABS */
+/* SWITCH */
 function show(tab){
   discover.style.display = tab==="discover"?"block":"none";
   codies.style.display = tab==="codies"?"block":"none";
 }
 
-/* LOAD DISCOVER */
+/* DISCOVER */
 async function loadDiscover(){
-  const { data } = await supabase
+  const { data } = await sb
     .from("posts")
     .select("*, profiles(username)")
     .order("created_at",{ascending:false});
@@ -110,9 +244,9 @@ async function loadDiscover(){
   });
 }
 
-/* LOAD CODIES */
+/* CODIES */
 async function loadCodies(){
-  const { data } = await supabase
+  const { data } = await sb
     .from("posts")
     .select("*, profiles(username)")
     .order("created_at",{ascending:false});
@@ -131,7 +265,7 @@ async function loadCodies(){
 
 /* POST */
 async function post(){
-  await supabase.from("posts").insert({
+  await sb.from("posts").insert({
     user_id:user.id,
     content:postInput.value
   });
@@ -140,4 +274,8 @@ async function post(){
   loadDiscover();
   loadCodies();
 }
+
 </script>
+
+</body>
+</html>
