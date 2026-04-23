@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="utf-8">
-<title>Codies V7.4</title>
+<meta charset="UTF-8">
+<title>Mystarsnight Code</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 
@@ -10,359 +10,310 @@
 body{
   margin:0;
   font-family:system-ui;
-  background:#0a0a0a;
-  color:white;
-}
-
-header{
-  display:flex;
-  justify-content:space-between;
-  padding:12px;
-  background:#111;
-  border-bottom:1px solid #222;
-}
-
-.main{
-  display:flex;
-  height:calc(100vh - 55px);
-}
-
-.sidebar{
-  width:280px;
   background:#0f0f0f;
-  padding:12px;
-  border-right:1px solid #222;
-}
-
-.feed{
-  flex:1;
-  overflow:auto;
-  padding:20px;
-}
-
-.card{
-  background:#151515;
-  padding:12px;
-  margin-bottom:12px;
-  border-radius:10px;
-  border:1px solid #222;
-}
-
-input,textarea{
-  width:100%;
-  margin:6px 0;
-  padding:10px;
-  background:#1c1c1c;
-  border:1px solid #333;
   color:white;
-  border-radius:8px;
+  overflow:hidden;
+}
+
+/* TOP BAR */
+#top{
+  position:fixed;
+  top:0;
+  width:100%;
+  display:flex;
+  justify-content:center;
+  gap:10px;
+  padding:10px;
+  background:#111;
+  z-index:10;
+}
+
+.tab{
+  padding:8px 14px;
+  background:#222;
+  border-radius:10px;
+  cursor:pointer;
+}
+
+.active{
+  background:linear-gradient(45deg,#00f5ff,#9f00ff);
+}
+
+/* AUTH */
+#auth{
+  display:flex;
+  height:100vh;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  gap:8px;
+}
+
+input{
+  padding:10px;
+  border:none;
+  border-radius:10px;
+  background:#1a1a1a;
+  color:white;
 }
 
 button{
-  width:100%;
   padding:10px;
-  margin-top:6px;
-  background:linear-gradient(90deg,#00ff88,#00c3ff);
   border:none;
+  border-radius:10px;
+  cursor:pointer;
+  background:linear-gradient(45deg,#00f5ff,#9f00ff);
+  color:white;
+}
+
+/* APP */
+#app{display:none;}
+
+/* FEEDS */
+.feed{
+  height:100vh;
+  overflow-y:scroll;
+  padding-top:60px;
+}
+
+/* POST */
+.post{
+  margin:10px auto;
+  width:90%;
+  max-width:400px;
+  background:#151515;
+  padding:15px;
+  border-radius:15px;
+}
+
+/* ACTIONS */
+.actions{
+  display:flex;
+  justify-content:space-between;
+  margin-top:10px;
+}
+
+.icon{
+  background:#222;
+  padding:6px 10px;
   border-radius:8px;
   cursor:pointer;
 }
 
-.modal{
-  display:none;
+/* POST BOX */
+#postBox{
   position:fixed;
-  inset:0;
-  background:rgba(0,0,0,0.75);
-  justify-content:center;
-  align-items:center;
-}
-
-.box{
-  background:#141414;
-  padding:20px;
-  width:350px;
-  border-radius:10px;
-  border:1px solid #333;
-}
-
-.popup{
-  position:fixed;
-  bottom:20px;
+  bottom:15px;
   left:50%;
   transform:translateX(-50%);
-  background:#111;
-  padding:10px 15px;
-  border:1px solid #333;
+  display:flex;
+  gap:10px;
+}
+
+/* NOTIF */
+#notif{
+  position:fixed;
+  top:20px;
+  left:50%;
+  transform:translateX(-50%);
+  background:#222;
+  padding:10px;
   border-radius:10px;
   display:none;
+  z-index:999;
 }
 </style>
 </head>
 
 <body>
 
-<header>
-  <div>Codies V7.4 </div>
-  <div id="userBox"></div>
-</header>
+<div id="notif"></div>
 
-<div class="main">
+<!-- AUTH -->
+<div id="auth">
+  <h2>Mystarsnight Code</h2>
+  <input id="email" placeholder="Email">
+  <input id="password" type="password" placeholder="Password">
+  <input id="username" placeholder="Username">
+  <input id="avatar" placeholder="Avatar URL">
 
-<div class="sidebar">
-
-  <h3>Create Code</h3>
-
-  <input id="title" placeholder="Title">
-  <input id="lang" placeholder="Language">
-  <textarea id="code" placeholder="Code"></textarea>
-
-  <button onclick="createPost()">Post</button>
-
-  <button onclick="openLogin()">Login</button>
-  <button id="adminBtn" style="display:none" onclick="openAdmin()">Admin Panel</button>
-
+  <button onclick="signup()">Sign Up</button>
+  <button onclick="login()">Login</button>
 </div>
 
-<div class="feed" id="feed"></div>
+<!-- APP -->
+<div id="app">
 
-</div>
-
-<!-- LOGIN -->
-<div class="modal" id="loginModal">
-  <div class="box">
-    <h3>Login</h3>
-    <input id="email" placeholder="Email">
-    <input id="password" type="password" placeholder="Password">
-
-    <button onclick="login()">Login</button>
-    <button onclick="signup()">Sign Up</button>
-    <button onclick="closeLogin()">Close</button>
+  <!-- TOP TABS -->
+  <div id="top">
+    <div class="tab active" onclick="show('discover')">🔍 Discover</div>
+    <div class="tab" onclick="show('codies')">🎥 Codies</div>
   </div>
-</div>
 
-<!-- ADMIN -->
-<div class="modal" id="adminModal">
-  <div class="box">
-    <h3>Admin Panel !!!</h3>
+  <!-- DISCOVER -->
+  <div class="feed" id="discover"></div>
 
-    <input id="targetUser" placeholder="User email">
+  <!-- CODIES (TikTok style) -->
+  <div class="feed" id="codies" style="display:none;"></div>
 
-    <button onclick="warn()">Warn</button>
-    <button onclick="ban()">Ban</button>
-    <button onclick="verify()">Verify</button>
-
-    <button onclick="closeAdmin()">Close</button>
+  <!-- POST -->
+  <div id="postBox">
+    <input id="postInput" placeholder="Post code...">
+    <button onclick="post()">🚀</button>
   </div>
-</div>
 
-<!-- POPUP -->
-<div class="popup" id="popup"></div>
+</div>
 
 <script>
+const supabase = supabase.createClient(
+"https://heemtxdkjxnlzggtpbsf.supabase.co",
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhlZW10eGRranhubHpnZ3RwYnNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4ODUwMTcsImV4cCI6MjA5MjQ2MTAxN30.C-Q1X4XGjz4mZyrkkmW3N4uPFGu1eDe9sb7QWfs9_dU"
+);
 
-/* ================= SUPABASE ================= */
-const supabaseUrl = "https://heemtxdkjxnlzggtpbsf.supabase.co"
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhlZW10eGRranhubHpnZ3RwYnNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4ODUwMTcsImV4cCI6MjA5MjQ2MTAxN30.C-Q1X4XGjz4mZyrkkmW3N4uPFGu1eDe9sb7QWfs9_dU"
+let user=null;
 
-const client = supabase.createClient(supabaseUrl, supabaseKey)
-
-/* ================= STATE ================= */
-let user = null
-let profile = null
-
-/* ================= POPUP ================= */
-function show(msg){
-  const p = document.getElementById("popup")
-  p.innerText = msg
-  p.style.display = "block"
-  setTimeout(()=>p.style.display="none",2000)
+/* NOTIF */
+function notify(t){
+  notif.innerText=t;
+  notif.style.display="block";
+  setTimeout(()=>notif.style.display="none",2000);
 }
 
-/* ================= NAME SYSTEM ================= */
-function displayName(email, verified){
-  if(email === "blakestalder123@gmail.com"){
-    return "Mystarsnight"
-  }
-  return verified ? email + " ✅" : email
-}
-
-/* ================= ADMIN ================= */
-function isAdmin(){
-  return (
-    profile?.role === "admin" ||
-    user?.email === "blakestalder123@gmail.com"
-  )
-}
-
-/* ================= USER ================= */
-async function getUser(){
-  const { data } = await client.auth.getUser()
-  user = data.user
-
-  if(user){
-    await loadProfile()
-    await loadPosts()
-  }
-
-  updateUI()
-}
-
-/* ================= PROFILE ================= */
-async function loadProfile(){
-  const { data } = await client
-    .from("profiles")
-    .select("*")
-    .eq("email", user.email)
-
-  if(!data || data.length === 0){
-    await client.from("profiles").insert({
-      email:user.email,
-      role:"user",
-      verified:false,
-      banned:false
-    })
-  }
-
-  const { data: p } = await client
-    .from("profiles")
-    .select("*")
-    .eq("email", user.email)
-    .single()
-
-  profile = p
-}
-
-/* ================= AUTH ================= */
-function openLogin(){ loginModal.style.display="flex" }
-function closeLogin(){ loginModal.style.display="none" }
-
-async function login(){
-  const { error } = await client.auth.signInWithPassword({
+/* SIGNUP */
+async function signup(){
+  const { data } = await supabase.auth.signUp({
     email:email.value,
     password:password.value
-  })
+  });
 
-  if(error) return show(error.message)
+  await supabase.from("profiles").update({
+    username:username.value,
+    avatar_url:avatar.value,
+    is_admin: email.value==="blakestalder123@gmail.com"
+  }).eq("id",data.user.id);
 
-  closeLogin()
-  getUser()
+  notify("Account created");
 }
 
-async function signup(){
-  const { error } = await client.auth.signUp({
+/* LOGIN */
+async function login(){
+  const { data } = await supabase.auth.signInWithPassword({
     email:email.value,
-    password:password.value,
-    options:{
-      emailRedirectTo:"https://mystarsnight.github.io/MystarsnightCode/"
-    }
-  })
+    password:password.value
+  });
 
-  if(error) show(error.message)
-  else show("Check email 📩")
+  start(data.user);
 }
 
-/* ================= POSTS ================= */
-async function createPost(){
-  if(!user) return show("Login first")
-
-  await client.from("posts").insert({
-    title:title.value,
-    language:lang.value,
-    code:code.value,
-    author:user.email
-  })
-
-  show("Posted!")
-  loadPosts()
-}
-
-async function loadPosts(){
-  const { data, error } = await client.from("posts")
+/* START */
+async function start(u){
+  const { data } = await supabase
+    .from("profiles")
     .select("*")
-    .order("created_at",{ascending:false})
+    .eq("id",u.id)
+    .single();
 
-  if(error){
-    feed.innerHTML = `<div>${error.message}</div>`
-    return
-  }
+  user=data;
 
-  if(!data || data.length === 0){
-    feed.innerHTML = "<div>No posts yet</div>"
-    return
-  }
+  auth.style.display="none";
+  app.style.display="block";
 
-  feed.innerHTML = ""
+  loadDiscover();
+  loadCodies();
+}
+
+/* SWITCH TABS */
+function show(tab){
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  event.target.classList.add("active");
+
+  discover.style.display = tab==="discover"?"block":"none";
+  codies.style.display = tab==="codies"?"block":"none";
+}
+
+/* DISCOVER (GLOBAL POSTS) */
+async function loadDiscover(){
+  const { data } = await supabase
+    .from("posts")
+    .select("*, profiles(username)")
+    .order("created_at",{ascending:false});
+
+  discover.innerHTML="";
 
   data.forEach(p=>{
-    const div = document.createElement("div")
-    div.className = "card"
+    discover.innerHTML+=`
+      <div class="post">
+        <b>${p.profiles?.username||"User"}</b>
+        <p>${p.content}</p>
 
-    const name = displayName(p.author, p.verified)
-
-    div.innerHTML = `
-      <b>${p.title}</b><br>
-      <small>${p.language} • ${name}</small>
-      <pre>${p.code}</pre>
-    `
-
-    feed.appendChild(div)
-  })
+        <div class="actions">
+          <div class="icon" onclick="like('${p.id}')">❤️</div>
+          <div class="icon" onclick="comment('${p.id}')">💬</div>
+        </div>
+      </div>
+    `;
+  });
 }
 
-/* ================= ADMIN ================= */
-function openAdmin(){
-  if(!isAdmin()) return show("Not admin")
-  adminModal.style.display="flex"
+/* CODIES (DOOM SCROLL STYLE) */
+async function loadCodies(){
+  const { data } = await supabase
+    .from("posts")
+    .select("*, profiles(username)")
+    .order("created_at",{ascending:false});
+
+  codies.innerHTML="";
+
+  data.forEach(p=>{
+    codies.innerHTML+=`
+      <div class="post" style="height:90vh;">
+        <h3>${p.profiles?.username||"User"}</h3>
+        <p>${p.content}</p>
+
+        <div class="actions">
+          <div class="icon" onclick="like('${p.id}')">❤️</div>
+          <div class="icon" onclick="comment('${p.id}')">💬</div>
+        </div>
+      </div>
+    `;
+  });
 }
 
-function closeAdmin(){
-  adminModal.style.display="none"
+/* POST */
+async function post(){
+  await supabase.from("posts").insert({
+    user_id:user.id,
+    content:postInput.value
+  });
+
+  postInput.value="";
+  loadDiscover();
+  loadCodies();
 }
 
-async function warn(){
-  await client.from("warnings").insert({
-    user_email:targetUser.value,
-    reason:"warning"
-  })
-  show("User warned")
+/* LIKE */
+async function like(id){
+  await supabase.from("likes").insert({
+    user_id:user.id,
+    post_id:id
+  });
+
+  notify("Liked");
 }
 
-async function ban(){
-  await client.from("profiles")
-    .update({ banned:true })
-    .eq("email",targetUser.value)
+/* COMMENT */
+async function comment(id){
+  const t=prompt("Comment:");
+  if(!t) return;
 
-  show("User banned")
+  await supabase.from("comments").insert({
+    post_id:id,
+    user_id:user.id,
+    content:t
+  });
+
+  notify("Comment sent");
 }
-
-async function verify(){
-  await client.from("profiles")
-    .update({ verified:true })
-    .eq("email",targetUser.value)
-
-  show("User verified ✅")
-}
-
-/* ================= UI ================= */
-function updateUI(){
-  userBox.innerHTML = user
-    ? user.email
-    : `<button onclick="openLogin()">Login</button>`
-
-  adminBtn.style.display = isAdmin() ? "block" : "none"
-}
-
-/* ================= INIT ================= */
-client.auth.onAuthStateChange((_, session)=>{
-  if(session){
-    user = session.user
-    loadProfile()
-    updateUI()
-  }
-})
-
-getUser()
-
 </script>
 
 </body>
