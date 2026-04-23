@@ -59,7 +59,7 @@ button{
 }
 
 .feed{
-  height:calc(100vh - 60px);
+  height:calc(100vh - 140px);
   overflow-y:auto;
   padding:10px;
 }
@@ -72,6 +72,19 @@ button{
   max-width:420px;
 }
 
+/* POST BOX FIXED */
+#postBox{
+  position:fixed;
+  bottom:10px;
+  left:50%;
+  transform:translateX(-50%);
+  display:flex;
+  gap:10px;
+  background:#111;
+  padding:10px;
+  border-radius:12px;
+}
+
 #msg{
   position:fixed;
   top:20px;
@@ -81,11 +94,6 @@ button{
   padding:10px;
   border-radius:10px;
   display:none;
-  z-index:999;
-}
-
-.admin{
-  border:2px solid red;
 }
 </style>
 </head>
@@ -117,11 +125,16 @@ button{
   <div class="feed" id="discover"></div>
   <div class="feed" id="codies" style="display:none;"></div>
 
+  <!-- ✅ THIS WAS MISSING BEFORE -->
+  <div id="postBox">
+    <input id="postInput" placeholder="Write post...">
+    <button onclick="post()">POST 🚀</button>
+  </div>
+
 </div>
 
 <script>
 
-/* ✅ FIXED SUPABASE INIT (IMPORTANT) */
 const sb = supabase.createClient(
 "https://heemtxdkjxnlzggtpbsf.supabase.co",
 "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhlZW10eGRranhubHpnZ3RwYnNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4ODUwMTcsImV4cCI6MjA5MjQ2MTAxN30.C-Q1X4XGjz4mZyrkkmW3N4uPFGu1eDe9sb7QWfs9_dU"
@@ -129,19 +142,14 @@ const sb = supabase.createClient(
 
 let user=null;
 
-/* MESSAGE */
+/* MSG */
 function showMsg(t){
   msg.innerText=t;
   msg.style.display="block";
-  setTimeout(()=>msg.style.display="none",2500);
+  setTimeout(()=>msg.style.display="none",2000);
 }
 
-/* 🔥 ADMIN CHECK */
-function isAdmin(email){
-  return email === "blakestalder123@gmail.com";
-}
-
-/* 🔥 SIGNUP FIXED (REAL WORKING) */
+/* SIGNUP */
 async function signup(){
 
   const { data, error } = await sb.auth.signUp({
@@ -150,32 +158,26 @@ async function signup(){
   });
 
   if(error){
-    showMsg("Signup error: " + error.message);
+    showMsg(error.message);
     return;
   }
 
   const u = data.user;
 
   if(!u){
-    showMsg("Check email to confirm account");
+    showMsg("Check email to confirm signup");
     return;
   }
 
-  const { error: profileError } = await sb.from("profiles").insert({
+  await sb.from("profiles").insert({
     id: u.id,
-    username: username.value,
-    is_admin: isAdmin(email.value)
+    username: username.value
   });
 
-  if(profileError){
-    showMsg("Profile error: " + profileError.message);
-    return;
-  }
-
-  showMsg("Signup successful!");
+  showMsg("Signup success");
 }
 
-/* 🔥 LOGIN FIXED */
+/* LOGIN */
 async function login(){
 
   const { data, error } = await sb.auth.signInWithPassword({
@@ -184,14 +186,14 @@ async function login(){
   });
 
   if(error){
-    showMsg("Login error: " + error.message);
+    showMsg(error.message);
     return;
   }
 
   start(data.user);
 }
 
-/* START APP */
+/* START */
 async function start(u){
 
   const { data } = await sb
@@ -209,10 +211,37 @@ async function start(u){
   loadCodies();
 }
 
-/* SWITCH TABS */
+/* TAB */
 function show(tab){
   discover.style.display = tab==="discover"?"block":"none";
   codies.style.display = tab==="codies"?"block":"none";
+}
+
+/* POST FUNCTION (FIXED CORE ISSUE) */
+async function post(){
+
+  if(!postInput.value){
+    showMsg("Write something first");
+    return;
+  }
+
+  const { error } = await sb.from("posts").insert({
+    user_id:user.id,
+    content:postInput.value
+  });
+
+  if(error){
+    showMsg(error.message);
+    return;
+  }
+
+  postInput.value="";
+
+  // 🔥 IMPORTANT: refresh feeds instantly
+  loadDiscover();
+  loadCodies();
+
+  showMsg("Posted!");
 }
 
 /* DISCOVER */
@@ -227,7 +256,7 @@ async function loadDiscover(){
 
   data.forEach(p=>{
     discover.innerHTML+=`
-      <div class="post ${p.profiles?.is_admin?'admin':''}">
+      <div class="post">
         <b>${p.profiles?.username||"User"}</b>
         <p>${p.content}</p>
       </div>
