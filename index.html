@@ -12,34 +12,8 @@ body{
   font-family:system-ui;
   background:#0f0f0f;
   color:white;
-  overflow:hidden;
 }
 
-/* TOP BAR */
-#top{
-  position:fixed;
-  top:0;
-  width:100%;
-  display:flex;
-  justify-content:center;
-  gap:10px;
-  padding:10px;
-  background:#111;
-  z-index:10;
-}
-
-.tab{
-  padding:8px 14px;
-  background:#222;
-  border-radius:10px;
-  cursor:pointer;
-}
-
-.active{
-  background:linear-gradient(45deg,#00f5ff,#9f00ff);
-}
-
-/* AUTH */
 #auth{
   display:flex;
   height:100vh;
@@ -61,32 +35,42 @@ button{
   padding:10px;
   border:none;
   border-radius:10px;
-  cursor:pointer;
   background:linear-gradient(45deg,#00f5ff,#9f00ff);
   color:white;
+  cursor:pointer;
 }
 
-/* APP */
 #app{display:none;}
 
-/* FEEDS */
+#top{
+  display:flex;
+  justify-content:center;
+  gap:10px;
+  padding:10px;
+  background:#111;
+}
+
+.tab{
+  padding:8px 14px;
+  background:#222;
+  border-radius:10px;
+  cursor:pointer;
+}
+
 .feed{
-  height:100vh;
-  overflow-y:scroll;
-  padding-top:60px;
+  height:calc(100vh - 60px);
+  overflow-y:auto;
+  padding:10px;
 }
 
-/* POST */
 .post{
-  margin:10px auto;
-  width:90%;
-  max-width:400px;
   background:#151515;
+  margin:10px auto;
   padding:15px;
-  border-radius:15px;
+  border-radius:12px;
+  max-width:400px;
 }
 
-/* ACTIONS */
 .actions{
   display:flex;
   justify-content:space-between;
@@ -100,7 +84,6 @@ button{
   cursor:pointer;
 }
 
-/* POST BOX */
 #postBox{
   position:fixed;
   bottom:15px;
@@ -110,7 +93,6 @@ button{
   gap:10px;
 }
 
-/* NOTIF */
 #notif{
   position:fixed;
   top:20px;
@@ -120,7 +102,6 @@ button{
   padding:10px;
   border-radius:10px;
   display:none;
-  z-index:999;
 }
 </style>
 </head>
@@ -144,19 +125,14 @@ button{
 <!-- APP -->
 <div id="app">
 
-  <!-- TOP TABS -->
   <div id="top">
-    <div class="tab active" onclick="show('discover')">🔍 Discover</div>
+    <div class="tab" onclick="show('discover')">🔍 Discover</div>
     <div class="tab" onclick="show('codies')">🎥 Codies</div>
   </div>
 
-  <!-- DISCOVER -->
   <div class="feed" id="discover"></div>
-
-  <!-- CODIES (TikTok style) -->
   <div class="feed" id="codies" style="display:none;"></div>
 
-  <!-- POST -->
   <div id="postBox">
     <input id="postInput" placeholder="Post code...">
     <button onclick="post()">🚀</button>
@@ -173,34 +149,57 @@ const supabase = supabase.createClient(
 let user=null;
 
 /* NOTIF */
-function notify(t){
-  notif.innerText=t;
+function notify(msg){
+  notif.innerText=msg;
   notif.style.display="block";
   setTimeout(()=>notif.style.display="none",2000);
 }
 
-/* SIGNUP */
+/* SIGNUP FIXED */
 async function signup(){
-  const { data } = await supabase.auth.signUp({
-    email:email.value,
-    password:password.value
+  const { data, error } = await supabase.auth.signUp({
+    email: email.value,
+    password: password.value
   });
 
-  await supabase.from("profiles").update({
-    username:username.value,
-    avatar_url:avatar.value,
-    is_admin: email.value==="blakestalder123@gmail.com"
-  }).eq("id",data.user.id);
+  if(error){
+    notify(error.message);
+    return;
+  }
 
-  notify("Account created");
+  if(!data.user){
+    notify("Check email to confirm signup");
+    return;
+  }
+
+  const { error: profileError } = await supabase
+    .from("profiles")
+    .insert({
+      id: data.user.id,
+      username: username.value,
+      avatar_url: avatar.value,
+      is_admin: email.value === "blakestalder123@gmail.com"
+    });
+
+  if(profileError){
+    notify(profileError.message);
+    return;
+  }
+
+  notify("Signup success!");
 }
 
 /* LOGIN */
 async function login(){
-  const { data } = await supabase.auth.signInWithPassword({
-    email:email.value,
-    password:password.value
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: email.value,
+    password: password.value
   });
+
+  if(error){
+    notify(error.message);
+    return;
+  }
 
   start(data.user);
 }
@@ -222,16 +221,13 @@ async function start(u){
   loadCodies();
 }
 
-/* SWITCH TABS */
+/* TAB SWITCH */
 function show(tab){
-  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
-  event.target.classList.add("active");
-
   discover.style.display = tab==="discover"?"block":"none";
   codies.style.display = tab==="codies"?"block":"none";
 }
 
-/* DISCOVER (GLOBAL POSTS) */
+/* DISCOVER */
 async function loadDiscover(){
   const { data } = await supabase
     .from("posts")
@@ -255,7 +251,7 @@ async function loadDiscover(){
   });
 }
 
-/* CODIES (DOOM SCROLL STYLE) */
+/* CODIES */
 async function loadCodies(){
   const { data } = await supabase
     .from("posts")
@@ -266,7 +262,7 @@ async function loadCodies(){
 
   data.forEach(p=>{
     codies.innerHTML+=`
-      <div class="post" style="height:90vh;">
+      <div class="post">
         <h3>${p.profiles?.username||"User"}</h3>
         <p>${p.content}</p>
 
@@ -281,10 +277,15 @@ async function loadCodies(){
 
 /* POST */
 async function post(){
-  await supabase.from("posts").insert({
+  const { error } = await supabase.from("posts").insert({
     user_id:user.id,
     content:postInput.value
   });
+
+  if(error){
+    notify(error.message);
+    return;
+  }
 
   postInput.value="";
   loadDiscover();
@@ -297,8 +298,7 @@ async function like(id){
     user_id:user.id,
     post_id:id
   });
-
-  notify("Liked");
+  notify("Liked!");
 }
 
 /* COMMENT */
@@ -307,8 +307,8 @@ async function comment(id){
   if(!t) return;
 
   await supabase.from("comments").insert({
-    post_id:id,
     user_id:user.id,
+    post_id:id,
     content:t
   });
 
