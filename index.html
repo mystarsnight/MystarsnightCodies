@@ -6,6 +6,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+<link rel="icon" href="data:,">
+
 <style>
 body{
   margin:0;
@@ -14,7 +16,6 @@ body{
   color:white;
 }
 
-/* NAV */
 nav{
   display:none;
   gap:10px;
@@ -29,21 +30,24 @@ button{
   padding:10px;
   border-radius:10px;
   cursor:pointer;
-  transition:.2s;
 }
+
 button:hover{transform:scale(1.05)}
 
-.screen{display:none;padding:15px}
+.screen{
+  display:none;
+  padding:15px;
+}
+
 .active{display:block}
 
-/* LOGIN */
 #login{
   max-width:400px;
   margin:auto;
+  height:100vh;
   display:flex;
   flex-direction:column;
   justify-content:center;
-  height:100vh;
 }
 
 input,textarea{
@@ -54,10 +58,8 @@ input,textarea{
   border-radius:10px;
   background:#1c1c1c;
   color:white;
-  outline:none;
 }
 
-/* POSTS */
 .post{
   background:#1a1a1a;
   padding:12px;
@@ -65,16 +67,14 @@ input,textarea{
   border-radius:12px;
 }
 
-/* CODE */
 .codebox{
   background:#0f0f0f;
   padding:10px;
   border-radius:10px;
-  font-family:monospace;
   white-space:pre-wrap;
+  font-family:monospace;
 }
 
-/* MESSAGES */
 .msg{
   padding:10px;
   margin-top:10px;
@@ -112,7 +112,7 @@ input,textarea{
 
 <!-- POST -->
 <div id="post" class="screen">
-<textarea id="code" placeholder="Paste code..."></textarea>
+<textarea id="code" placeholder="Paste code here..."></textarea>
 <button onclick="createPost()">Post</button>
 <div id="preview"></div>
 </div>
@@ -121,18 +121,22 @@ input,textarea{
 
 console.log("SCRIPT LOADED")
 
-/* ================= SUPABASE ================= */
-const supabase = window.supabase.createClient(
-"https://heemtxdkjxnlzggtpbsf.supabase.co",
-"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhlZW10eGRranhubHpnZ3RwYnNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4ODUwMTcsImV4cCI6MjA5MjQ2MTAxN30.C-Q1X4XGjz4mZyrkkmW3N4uPFGu1eDe9sb7QWfs9_dU"
-)
+/* ================= SUPABASE SAFE INIT ================= */
+if (!window.supabaseClient) {
+  window.supabaseClient = window.supabase.createClient(
+    "https://heemtxdkjxnlzggtpbsf.supabase.co",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhlZW10eGRranhubHpnZ3RwYnNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4ODUwMTcsImV4cCI6MjA5MjQ2MTAxN30.C-Q1X4XGjz4mZyrkkmW3N4uPFGu1eDe9sb7QWfs9_dU"
+  )
+}
+
+const supabase = window.supabaseClient
 
 let user=null
 let posts=[]
 
 /* ================= MESSAGE ================= */
 function msg(text,type="error"){
-  document.getElementById("msg").innerHTML=
+  document.getElementById("msg").innerHTML =
     `<div class="msg ${type}">${text}</div>`
 }
 
@@ -144,38 +148,60 @@ function show(id){
 
 /* ================= SIGNUP ================= */
 async function signup(){
-  let email=v("email")
-  let password=v("password")
+  try{
 
-  let {error}=await supabase.auth.signUp({email,password})
+    let email=document.getElementById("email").value
+    let password=document.getElementById("password").value
 
-  if(error){
-    return msg(error.message)
+    if(!email || !password){
+      return msg("Fill email + password")
+    }
+
+    const {error}=await supabase.auth.signUp({email,password})
+
+    if(error){
+      return msg(error.message)
+    }
+
+    msg("Check email to confirm account","ok")
+
+  }catch(e){
+    msg(e.message)
   }
-
-  msg("Check email to confirm account","ok")
 }
 
 /* ================= LOGIN ================= */
 async function login(){
+  try{
 
-  let {data,error}=await supabase.auth.signInWithPassword({
-    email:v("email"),
-    password:v("password")
-  })
+    let email=document.getElementById("email").value
+    let password=document.getElementById("password").value
 
-  if(error){
-    return msg(error.message)
+    const {data,error}=await supabase.auth.signInWithPassword({
+      email,
+      password
+    })
+
+    if(error){
+      return msg(error.message)
+    }
+
+    if(!data?.user){
+      return msg("Login failed")
+    }
+
+    user=data.user
+
+    await loadPosts()
+
+    document.getElementById("nav").style.display="flex"
+    show("discover")
+
+    msg("Logged in","ok")
+
+  }catch(e){
+    msg("Crash: "+e.message)
   }
-
-  user=data.user
-
-  await loadPosts()
-
-  document.getElementById("nav").style.display="flex"
-  show("discover")
-
-  msg("Logged in","ok")
 }
 
 /* ================= LOGOUT ================= */
@@ -184,10 +210,10 @@ function logout(){
   location.reload()
 }
 
-/* ================= POSTS ================= */
+/* ================= CREATE POST ================= */
 async function createPost(){
 
-  let content=v("code")
+  let content=document.getElementById("code").value
 
   if(!content){
     return msg("Write something first")
@@ -202,7 +228,7 @@ async function createPost(){
     return msg(error.message)
   }
 
-  v("code","")
+  document.getElementById("code").value=""
   loadPosts()
 
   msg("Posted","ok")
@@ -218,7 +244,6 @@ async function loadPosts(){
   }
 
   posts=data||[]
-
   render()
 }
 
@@ -241,31 +266,17 @@ function render(){
   })
 }
 
-/* ================= AUTO FORMAT ================= */
+/* ================= FORMAT ================= */
 function format(code){
   if(!code) return ""
-
-  return code
-    .replace(/\t/g,"  ")
-    .replace(/\n{3,}/g,"\n\n")
+  return code.replace(/\t/g,"  ").replace(/\n{3,}/g,"\n\n")
 }
 
-/* LIVE PREVIEW */
-document.addEventListener("input",e=>{
-  if(e.target.id==="code"){
-    document.getElementById("preview").innerHTML=
-      `<div class="codebox">${format(e.target.value)}</div>`
-  }
+/* ================= LIVE PREVIEW ================= */
+document.getElementById("code").addEventListener("input",e=>{
+  document.getElementById("preview").innerHTML =
+    `<div class="codebox">${format(e.target.value)}</div>`
 })
-
-/* ================= HELPERS ================= */
-function v(id,val){
-  if(val!==undefined){
-    document.getElementById(id).value=val
-  }else{
-    return document.getElementById(id).value
-  }
-}
 
 </script>
 
