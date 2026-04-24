@@ -1,287 +1,270 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
+<meta charset="utf-8">
 <title>Mystarsnight Code</title>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
 body{
   margin:0;
   font-family:system-ui;
-  background:#0f0f0f;
+  background:radial-gradient(circle at top,#1a1a1a,#050505);
   color:white;
 }
 
-#auth{
-  display:flex;
-  height:100vh;
-  align-items:center;
-  justify-content:center;
-  flex-direction:column;
+/* NAV */
+nav{
+  display:none;
   gap:10px;
-}
-
-input{
   padding:10px;
-  border:none;
-  border-radius:10px;
-  background:#1a1a1a;
-  color:white;
-  width:240px;
+  background:#111;
 }
 
 button{
+  background:#222;
+  border:none;
+  color:white;
   padding:10px;
+  border-radius:10px;
+  cursor:pointer;
+  transition:.2s;
+}
+button:hover{transform:scale(1.05)}
+
+.screen{display:none;padding:15px}
+.active{display:block}
+
+/* LOGIN */
+#login{
+  max-width:400px;
+  margin:auto;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  height:100vh;
+}
+
+input,textarea{
+  width:100%;
+  padding:10px;
+  margin:6px 0;
   border:none;
   border-radius:10px;
-  background:linear-gradient(45deg,#00f5ff,#9f00ff);
+  background:#1c1c1c;
   color:white;
-  cursor:pointer;
+  outline:none;
 }
 
-#app{display:none;}
-
-#top{
-  display:flex;
-  justify-content:center;
-  gap:10px;
-  padding:10px;
-  background:#111;
-}
-
-.tab{
-  padding:8px 14px;
-  background:#222;
-  border-radius:10px;
-  cursor:pointer;
-}
-
-.feed{
-  height:calc(100vh - 140px);
-  overflow-y:auto;
-  padding:10px;
-}
-
+/* POSTS */
 .post{
-  background:#151515;
-  margin:10px auto;
-  padding:15px;
-  border-radius:12px;
-  max-width:420px;
-}
-
-/* POST BOX FIXED */
-#postBox{
-  position:fixed;
-  bottom:10px;
-  left:50%;
-  transform:translateX(-50%);
-  display:flex;
-  gap:10px;
-  background:#111;
-  padding:10px;
+  background:#1a1a1a;
+  padding:12px;
+  margin-bottom:10px;
   border-radius:12px;
 }
 
-#msg{
-  position:fixed;
-  top:20px;
-  left:50%;
-  transform:translateX(-50%);
-  background:#222;
+/* CODE */
+.codebox{
+  background:#0f0f0f;
   padding:10px;
   border-radius:10px;
-  display:none;
+  font-family:monospace;
+  white-space:pre-wrap;
 }
+
+/* MESSAGES */
+.msg{
+  padding:10px;
+  margin-top:10px;
+  border-radius:10px;
+}
+.error{background:#ff2b2b}
+.ok{background:#2ecc71}
 </style>
 </head>
 
 <body>
 
+<nav id="nav">
+<button onclick="show('discover')">Discover</button>
+<button onclick="show('post')">Post</button>
+<button onclick="logout()">Logout</button>
+</nav>
+
+<!-- LOGIN -->
+<div id="login" class="screen active">
+<h2>Mystarsnight Code</h2>
+
+<input id="email" placeholder="Email">
+<input id="password" type="password" placeholder="Password">
+<input id="username" placeholder="Username">
+
+<button onclick="signup()">Sign Up</button>
+<button onclick="login()">Login</button>
+
 <div id="msg"></div>
-
-<!-- AUTH -->
-<div id="auth">
-  <h2>Mystarsnight Code</h2>
-
-  <input id="email" placeholder="Email">
-  <input id="password" type="password" placeholder="Password">
-  <input id="username" placeholder="Username">
-
-  <button onclick="signup()">SIGN UP</button>
-  <button onclick="login()">LOGIN</button>
 </div>
 
-<!-- APP -->
-<div id="app">
+<!-- DISCOVER -->
+<div id="discover" class="screen"></div>
 
-  <div id="top">
-    <div class="tab" onclick="show('discover')">🔍 Discover</div>
-    <div class="tab" onclick="show('codies')">🎥 Codies</div>
-  </div>
-
-  <div class="feed" id="discover"></div>
-  <div class="feed" id="codies" style="display:none;"></div>
-
-  <!-- ✅ THIS WAS MISSING BEFORE -->
-  <div id="postBox">
-    <input id="postInput" placeholder="Write post...">
-    <button onclick="post()">POST 🚀</button>
-  </div>
-
+<!-- POST -->
+<div id="post" class="screen">
+<textarea id="code" placeholder="Paste code..."></textarea>
+<button onclick="createPost()">Post</button>
+<div id="preview"></div>
 </div>
 
 <script>
 
-const sb = supabase.createClient(
+console.log("SCRIPT LOADED")
+
+/* ================= SUPABASE ================= */
+const supabase = window.supabase.createClient(
 "https://heemtxdkjxnlzggtpbsf.supabase.co",
 "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhlZW10eGRranhubHpnZ3RwYnNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4ODUwMTcsImV4cCI6MjA5MjQ2MTAxN30.C-Q1X4XGjz4mZyrkkmW3N4uPFGu1eDe9sb7QWfs9_dU"
-);
+)
 
-let user=null;
+let user=null
+let posts=[]
 
-/* MSG */
-function showMsg(t){
-  msg.innerText=t;
-  msg.style.display="block";
-  setTimeout(()=>msg.style.display="none",2000);
+/* ================= MESSAGE ================= */
+function msg(text,type="error"){
+  document.getElementById("msg").innerHTML=
+    `<div class="msg ${type}">${text}</div>`
 }
 
-/* SIGNUP */
-async function signup(){
+/* ================= NAV ================= */
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'))
+  document.getElementById(id).classList.add('active')
+}
 
-  const { data, error } = await sb.auth.signUp({
-    email: email.value,
-    password: password.value
-  });
+/* ================= SIGNUP ================= */
+async function signup(){
+  let email=v("email")
+  let password=v("password")
+
+  let {error}=await supabase.auth.signUp({email,password})
 
   if(error){
-    showMsg(error.message);
-    return;
+    return msg(error.message)
   }
 
-  const u = data.user;
-
-  if(!u){
-    showMsg("Check email to confirm signup");
-    return;
-  }
-
-  await sb.from("profiles").insert({
-    id: u.id,
-    username: username.value
-  });
-
-  showMsg("Signup success");
+  msg("Check email to confirm account","ok")
 }
 
-/* LOGIN */
+/* ================= LOGIN ================= */
 async function login(){
 
-  const { data, error } = await sb.auth.signInWithPassword({
-    email: email.value,
-    password: password.value
-  });
+  let {data,error}=await supabase.auth.signInWithPassword({
+    email:v("email"),
+    password:v("password")
+  })
 
   if(error){
-    showMsg(error.message);
-    return;
+    return msg(error.message)
   }
 
-  start(data.user);
+  user=data.user
+
+  await loadPosts()
+
+  document.getElementById("nav").style.display="flex"
+  show("discover")
+
+  msg("Logged in","ok")
 }
 
-/* START */
-async function start(u){
-
-  const { data } = await sb
-    .from("profiles")
-    .select("*")
-    .eq("id",u.id)
-    .single();
-
-  user=data;
-
-  auth.style.display="none";
-  app.style.display="block";
-
-  loadDiscover();
-  loadCodies();
+/* ================= LOGOUT ================= */
+function logout(){
+  supabase.auth.signOut()
+  location.reload()
 }
 
-/* TAB */
-function show(tab){
-  discover.style.display = tab==="discover"?"block":"none";
-  codies.style.display = tab==="codies"?"block":"none";
-}
+/* ================= POSTS ================= */
+async function createPost(){
 
-/* POST FUNCTION (FIXED CORE ISSUE) */
-async function post(){
+  let content=v("code")
 
-  if(!postInput.value){
-    showMsg("Write something first");
-    return;
+  if(!content){
+    return msg("Write something first")
   }
 
-  const { error } = await sb.from("posts").insert({
-    user_id:user.id,
-    content:postInput.value
-  });
+  let {error}=await supabase.from("posts").insert({
+    content,
+    user_id:user.id
+  })
 
   if(error){
-    showMsg(error.message);
-    return;
+    return msg(error.message)
   }
 
-  postInput.value="";
+  v("code","")
+  loadPosts()
 
-  // 🔥 IMPORTANT: refresh feeds instantly
-  loadDiscover();
-  loadCodies();
-
-  showMsg("Posted!");
+  msg("Posted","ok")
 }
 
-/* DISCOVER */
-async function loadDiscover(){
+/* ================= LOAD POSTS ================= */
+async function loadPosts(){
 
-  const { data } = await sb
-    .from("posts")
-    .select("*, profiles(username)")
-    .order("created_at",{ascending:false});
+  let {data,error}=await supabase.from("posts").select("*")
 
-  discover.innerHTML="";
+  if(error){
+    return msg(error.message)
+  }
 
-  data.forEach(p=>{
-    discover.innerHTML+=`
-      <div class="post">
-        <b>${p.profiles?.username||"User"}</b>
-        <p>${p.content}</p>
-      </div>
-    `;
-  });
+  posts=data||[]
+
+  render()
 }
 
-/* CODIES */
-async function loadCodies(){
+/* ================= RENDER ================= */
+function render(){
 
-  const { data } = await sb
-    .from("posts")
-    .select("*, profiles(username)")
-    .order("created_at",{ascending:false});
+  let d=document.getElementById("discover")
+  d.innerHTML=""
 
-  codies.innerHTML="";
+  posts.forEach(p=>{
 
-  data.forEach(p=>{
-    codies.innerHTML+=`
-      <div class="post">
-        <b>${p.profiles?.username||"User"}</b>
-        <p>${p.content}</p>
-      </div>
-    `;
-  });
+    let div=document.createElement("div")
+    div.className="post"
+
+    div.innerHTML=`
+      <div class="codebox">${format(p.content)}</div>
+    `
+
+    d.appendChild(div)
+  })
+}
+
+/* ================= AUTO FORMAT ================= */
+function format(code){
+  if(!code) return ""
+
+  return code
+    .replace(/\t/g,"  ")
+    .replace(/\n{3,}/g,"\n\n")
+}
+
+/* LIVE PREVIEW */
+document.addEventListener("input",e=>{
+  if(e.target.id==="code"){
+    document.getElementById("preview").innerHTML=
+      `<div class="codebox">${format(e.target.value)}</div>`
+  }
+})
+
+/* ================= HELPERS ================= */
+function v(id,val){
+  if(val!==undefined){
+    document.getElementById(id).value=val
+  }else{
+    return document.getElementById(id).value
+  }
 }
 
 </script>
